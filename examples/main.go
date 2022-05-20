@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"thumbgen"
+	"github.com/joschahenningsen/thumbgen"
 )
 
 func main() {

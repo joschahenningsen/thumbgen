@@ -3,9 +3,9 @@ package main
 import (
 	"flag"
 	"fmt"
+	"github.com/joschahenningsen/thumbgen"
 	"github.com/schollz/progressbar/v3"
 	"os"
-	"thumbgen"
 )
 
 func main() {
