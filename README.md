@@ -8,11 +8,11 @@ Thumbgen generates a thumbnail sprite for a given video file, usable by a variet
 - `go install github.com/joschahenningsen/thumbgen/cmd/thumbgen@latest`
 ```bash
 // generate a thumbnail sprite for video.mp4 with a width of 100px containing 100 thumbnails:
-$ thumbgen -i video.mp4 -w 150 -n 100 -o thumbs.png
+$ thumbgen -i video.mp4 -w 150 -n 100 -o thumbs.jpeg
 ```
 
 ```go
-g, err := thumbgen.New("/home/joscha/Downloads/theo-2022-05-05-14-15COMB.mp4", 360, 100, "out.jpg")
+g, err := thumbgen.New("video.mp4", 360, 100, "out.jpg")
 if err != nil {
 	fmt.Println(err)
 }
