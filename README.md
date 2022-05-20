@@ -37,8 +37,13 @@ If you wish to track the progress, pass a channel to `New`:
 progress := make(chan int)
 g, err := thumbgen.New("video.mp4", 360, 100, "out.jpg", thumbgen.WithProgressChan(&progress))
 go func(){
-    p := <-progress
-    fmt.Println("progress: ", p, "%") // or whatever
+	for {
+		p := <-progress
+		fmt.Println("progress: ", p, "%") // or whatever
+		if p == 100 {
+			break
+		}
+	}
 }()
 g.Generate()
 ```
