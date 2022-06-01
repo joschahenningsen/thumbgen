@@ -47,3 +47,10 @@ go func(){
 }()
 g.Generate()
 ```
+
+If you desire to keep all frames (out0000.jpeg, ...) pass a path to `New`:
+
+
+```go
+g, err := thumbgen.New("video.mp4", 360, 100, "out.jpg", thumbgen.WithStoreSingleFrames("/tmp"))
+```

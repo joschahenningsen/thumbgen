@@ -14,6 +14,7 @@ func main() {
 	w := flag.Int("w", 0, "The width of the sprite.")
 	n := flag.Int("n", 0, "The number of thumbnails to generate.")
 	jpegQ := flag.Int("q", 0, "Quality of jpeg output (optional).")
+	fDir := flag.String("f", "", "Store single frames at <path> (optional).")
 	flag.Parse()
 	if *i == "" || *o == "" || *w == 0 || *n == 0 {
 		flag.Usage()
@@ -25,6 +26,9 @@ func main() {
 	var opts []thumbgen.Option
 	if jpegQ != nil {
 		opts = append(opts, thumbgen.WithJpegCompression(*jpegQ))
+	}
+	if fDir != nil {
+		opts = append(opts, thumbgen.WithStoreSingleFrames(*fDir))
 	}
 	opts = append(opts, thumbgen.WithProgressChan(&progress))
 

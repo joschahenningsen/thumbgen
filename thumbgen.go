@@ -9,6 +9,7 @@ import (
 	"image/jpeg"
 	"os"
 	"os/exec"
+	"path"
 )
 
 type Gen struct {
@@ -20,6 +21,7 @@ type Gen struct {
 	out          string
 	quality      int
 	thumbNum     int
+	frameDir     string
 	progressChan *chan int
 }
 
@@ -36,6 +38,12 @@ func WithJpegCompression(compression int) Option {
 func WithProgressChan(c *chan int) Option {
 	return func(g *Gen) {
 		g.progressChan = c
+	}
+}
+
+func WithStoreSingleFrames(dir string) Option {
+	return func(g *Gen) {
+		g.frameDir = dir
 	}
 }
 
@@ -61,7 +69,7 @@ func New(file string, width int, thumbNum int, out string, options ...Option) (*
 	aspect := float64(width) / float64(origW)
 	height := int(float64(origH) * aspect)
 
-	g := &Gen{file: file, duration: totalDuration, width: width, thumbNum: thumbNum, height: height, frames: []string{}, out: out}
+	g := &Gen{file: file, duration: totalDuration, width: width, thumbNum: thumbNum, height: height, frames: []string{}, out: out, frameDir: ""}
 	for _, option := range options {
 		option(g)
 	}
@@ -82,15 +90,18 @@ func (g *Gen) Generate() error {
 	if err != nil {
 		return err
 	}
-	err = g.cleanup()
-	if err != nil {
-		return err
+
+	if g.frameDir == "" {
+		err = g.cleanup()
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
 
 func (g *Gen) generateFrames() error {
-	for i := 0; i < 100; i++ {
+	for i := 0; i < g.thumbNum; i++ {
 		err := g.exportFrameAt(int(g.duration/float64(g.thumbNum)) * i)
 		if err != nil {
 			return err
@@ -103,12 +114,13 @@ func (g *Gen) generateFrames() error {
 }
 
 func (g *Gen) exportFrameAt(time int) error {
-	cmd := exec.Command("ffmpeg", "-y", "-ss", fmt.Sprintf("%d", time), "-i", g.file, "-vf", fmt.Sprintf("scale=%d:-1", g.width), "-frames:v", "1", "-q:v", "2", fmt.Sprintf("out-%05d.jpeg", time))
+	frame := path.Join(g.frameDir, fmt.Sprintf("out-%05d.jpeg", time))
+	cmd := exec.Command("ffmpeg", "-y", "-ss", fmt.Sprintf("%d", time), "-i", g.file, "-vf", fmt.Sprintf("scale=%d:-1", g.width), "-frames:v", "1", "-q:v", "2", frame)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("ffmpeg: %s :%v", string(out), err)
 	}
-	g.frames = append(g.frames, fmt.Sprintf("out-%05d.jpeg", time))
+	g.frames = append(g.frames, frame)
 	return err
 }
 
