@@ -3,17 +3,21 @@ package thumbgen
 import (
 	"bytes"
 	"fmt"
-	"github.com/tidwall/gjson"
 	"image"
 	"image/draw"
 	"image/jpeg"
 	"os"
 	"os/exec"
 	"path"
+
+	"hash/fnv"
+
+	"github.com/tidwall/gjson"
 )
 
 type Gen struct {
 	file         string
+	fileHash     string
 	duration     float64 // in seconds
 	width        int
 	height       int
@@ -47,6 +51,12 @@ func WithStoreSingleFrames(dir string) Option {
 	}
 }
 
+func hash(s string) string {
+	h := fnv.New32a()
+	h.Write([]byte(s))
+	return fmt.Sprintf("%x", h.Sum32())
+}
+
 func New(file string, width int, thumbNum int, out string, options ...Option) (*Gen, error) {
 	// check for required software:
 	_, err := exec.LookPath("ffmpeg")
@@ -69,7 +79,7 @@ func New(file string, width int, thumbNum int, out string, options ...Option) (*
 	aspect := float64(width) / float64(origW)
 	height := int(float64(origH) * aspect)
 
-	g := &Gen{file: file, duration: totalDuration, width: width, thumbNum: thumbNum, height: height, frames: []string{}, out: out, frameDir: ""}
+	g := &Gen{file: file, fileHash: hash(file), duration: totalDuration, width: width, thumbNum: thumbNum, height: height, frames: []string{}, out: out, frameDir: ""}
 	for _, option := range options {
 		option(g)
 	}
@@ -114,7 +124,7 @@ func (g *Gen) generateFrames() error {
 }
 
 func (g *Gen) exportFrameAt(time int) error {
-	frame := path.Join(g.frameDir, fmt.Sprintf("out-%05d.jpeg", time))
+	frame := path.Join(g.frameDir, fmt.Sprintf(g.fileHash+"-out-%05d.jpeg", time))
 	cmd := exec.Command("ffmpeg", "-y", "-ss", fmt.Sprintf("%d", time), "-i", g.file, "-vf", fmt.Sprintf("scale=%d:-1", g.width), "-frames:v", "1", "-q:v", "2", frame)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
