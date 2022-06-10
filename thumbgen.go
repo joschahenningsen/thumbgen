@@ -2,6 +2,7 @@ package thumbgen
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"image"
 	"image/draw"
@@ -58,6 +59,9 @@ func hash(s string) string {
 }
 
 func New(file string, width int, thumbNum int, out string, options ...Option) (*Gen, error) {
+	if thumbNum < 1 {
+		return nil, errors.New("invalid thumbNum, must be >= 1")
+	}
 	// check for required software:
 	_, err := exec.LookPath("ffmpeg")
 	if err != nil {
@@ -117,7 +121,7 @@ func (g *Gen) generateFrames() error {
 			return err
 		}
 		if g.progressChan != nil {
-			*g.progressChan <- i
+			*g.progressChan <- int((float64(i) / float64(g.thumbNum-1.0)) * 100)
 		}
 	}
 	return nil
