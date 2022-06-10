@@ -176,7 +176,7 @@ func (g Gen) merge() error {
 func (g Gen) cleanup() error {
 	for _, frame := range g.frames {
 		err := os.Remove(frame)
-		if err != nil {
+		if err != nil && !os.IsNotExist(err) {
 			return err
 		}
 	}
