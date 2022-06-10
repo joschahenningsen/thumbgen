@@ -79,7 +79,7 @@ func New(file string, width int, thumbNum int, out string, options ...Option) (*
 	aspect := float64(width) / float64(origW)
 	height := int(float64(origH) * aspect)
 
-	g := &Gen{file: file, fileHash: hash(file), duration: totalDuration, width: width, thumbNum: thumbNum, height: height, frames: []string{}, out: out, frameDir: ""}
+	g := &Gen{file: file, fileHash: hash(file + out), duration: totalDuration, width: width, thumbNum: thumbNum, height: height, frames: []string{}, out: out, frameDir: ""}
 	for _, option := range options {
 		option(g)
 	}
