@@ -169,7 +169,7 @@ func (g Gen) merge() error {
 		return err
 	}
 	defer f.Close()
-	err = jpeg.Encode(f, dst, &jpeg.Options{Quality: 75})
+	err = jpeg.Encode(f, dst, &jpeg.Options{Quality: g.quality})
 	return err
 }
 
