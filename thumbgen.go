@@ -2,6 +2,7 @@ package thumbgen
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"image"
 	"image/draw"
@@ -58,6 +59,9 @@ func hash(s string) string {
 }
 
 func New(file string, width int, thumbNum int, out string, options ...Option) (*Gen, error) {
+	if thumbNum < 1 {
+		return nil, errors.New("invalid thumbNum, must be >= 1")
+	}
 	// check for required software:
 	_, err := exec.LookPath("ffmpeg")
 	if err != nil {
@@ -79,7 +83,7 @@ func New(file string, width int, thumbNum int, out string, options ...Option) (*
 	aspect := float64(width) / float64(origW)
 	height := int(float64(origH) * aspect)
 
-	g := &Gen{file: file, fileHash: hash(file), duration: totalDuration, width: width, thumbNum: thumbNum, height: height, frames: []string{}, out: out, frameDir: ""}
+	g := &Gen{file: file, fileHash: hash(file + out + fmt.Sprintf("%d", os.Getpid())), duration: totalDuration, width: width, thumbNum: thumbNum, height: height, frames: []string{}, out: out, frameDir: ""}
 	for _, option := range options {
 		option(g)
 	}
@@ -117,7 +121,7 @@ func (g *Gen) generateFrames() error {
 			return err
 		}
 		if g.progressChan != nil {
-			*g.progressChan <- i
+			*g.progressChan <- int((float64(i) / float64(g.thumbNum-1.0)) * 100)
 		}
 	}
 	return nil
@@ -165,14 +169,14 @@ func (g Gen) merge() error {
 		return err
 	}
 	defer f.Close()
-	err = jpeg.Encode(f, dst, &jpeg.Options{Quality: 75})
+	err = jpeg.Encode(f, dst, &jpeg.Options{Quality: g.quality})
 	return err
 }
 
 func (g Gen) cleanup() error {
 	for _, frame := range g.frames {
 		err := os.Remove(frame)
-		if err != nil {
+		if err != nil && !os.IsNotExist(err) {
 			return err
 		}
 	}
