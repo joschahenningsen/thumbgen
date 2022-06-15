@@ -7,6 +7,7 @@ import (
 	"image"
 	"image/draw"
 	"image/jpeg"
+	"math"
 	"os"
 	"os/exec"
 	"path"
@@ -128,7 +129,7 @@ func (g *Gen) generateFrames() error {
 }
 
 func (g *Gen) exportFrameAt(time int) error {
-	frame := path.Join(g.frameDir, fmt.Sprintf(g.fileHash+"-out-%05d.jpeg", time))
+	frame := path.Join(g.frameDir, fmt.Sprintf(g.fileHash+"-out-%d.jpeg", time))
 	cmd := exec.Command("ffmpeg", "-y", "-ss", fmt.Sprintf("%d", time), "-i", g.file, "-vf", fmt.Sprintf("scale=%d:-1", g.width), "-frames:v", "1", "-q:v", "2", frame)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
@@ -139,7 +140,8 @@ func (g *Gen) exportFrameAt(time int) error {
 }
 
 func (g Gen) merge() error {
-	dst := image.NewRGBA(image.Rect(0, 0, g.width*10, g.height*10))
+	d := int(math.Ceil(math.Sqrt(float64(g.thumbNum))))
+	dst := image.NewRGBA(image.Rect(0, 0, g.width*d, g.height*d))
 	for i, frame := range g.frames {
 		f, err := os.Open(frame)
 		if err != nil {
@@ -152,12 +154,12 @@ func (g Gen) merge() error {
 		draw.Draw(dst,
 			image.Rectangle{
 				Min: image.Point{
-					X: (i % 10) * g.width,
-					Y: (i / 10) * g.height,
+					X: (i % d) * g.width,
+					Y: (i / d) * g.height,
 				},
 				Max: image.Point{
-					X: (i%10)*g.width + src.Bounds().Max.X,
-					Y: (i/10)*g.height + src.Bounds().Max.Y,
+					X: (i%d)*g.width + src.Bounds().Max.X,
+					Y: (i/d)*g.height + src.Bounds().Max.Y,
 				},
 			},
 			src,
