@@ -3,20 +3,21 @@ package main
 import (
 	"flag"
 	"fmt"
+	"os"
+
 	"github.com/joschahenningsen/thumbgen"
 	"github.com/schollz/progressbar/v3"
-	"os"
 )
 
 func main() {
 	i := flag.String("i", "", "The input video file to generate thumbnails for.")
 	o := flag.String("o", "", "The output sprite.")
 	w := flag.Int("w", 0, "The width of the sprite.")
-	n := flag.Int("n", 0, "The number of thumbnails to generate.")
+	t := flag.Int("t", 0, "The interval between to thumbnails in seconds.")
 	jpegQ := flag.Int("q", 0, "Quality of jpeg output (optional).")
 	fDir := flag.String("f", "", "Store single frames at <path> (optional).")
 	flag.Parse()
-	if *i == "" || *o == "" || *w == 0 || *n == 0 {
+	if *i == "" || *o == "" || *w == 0 || *t == 0 {
 		flag.Usage()
 		return
 	}
@@ -32,7 +33,7 @@ func main() {
 	}
 	opts = append(opts, thumbgen.WithProgressChan(&progress))
 
-	gen, err := thumbgen.New(*i, *w, *n, *o, opts...)
+	gen, err := thumbgen.New(*i, *w, *t, *o, opts...)
 	if err != nil {
 		fmt.Println("create generator failed: ", err.Error())
 		os.Exit(1)
@@ -55,5 +56,5 @@ func main() {
 		fmt.Println("generating thumbnails failed: ", err.Error())
 		os.Exit(1)
 	}
-	fmt.Printf("Generated %d thumbnails. (resolution:%dx%d)\n", *n, *w, gen.GetHeight())
+	fmt.Printf("Finished generating thumbnails. (resolution:%dx%d)\n", *w, gen.GetHeight())
 }

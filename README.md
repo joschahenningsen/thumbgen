@@ -7,8 +7,8 @@ Thumbgen generates a thumbnail sprite for a given video file, usable by a variet
 ### Via command line:
 - `go install github.com/joschahenningsen/thumbgen/cmd/thumbgen@latest`
 ```bash
-// generate a thumbnail sprite for video.mp4 with a width of 100px containing 100 thumbnails:
-$ thumbgen -i video.mp4 -w 150 -n 100 -o thumbs.jpeg
+// generate a thumbnail sprite for video.mp4 with a width of 100px for every 2 seconds:
+$ thumbgen -i video.mp4 -w 150 -n 2 -o thumbs.jpeg
 ```
 
 ```go
@@ -28,7 +28,7 @@ if err != nil {
 You can pass a jpeg compression factor (0: worst quality, 100: best) to `New`:
 
 ```go
-g, err := thumbgen.New("video.mp4", 360, 100, "out.jpg", thumbgen.WithJpegCompression(90))
+g, err := thumbgen.New("video.mp4", 360, 2, "out.jpg", thumbgen.WithJpegCompression(90))
 ```
 
 If you wish to track the progress, pass a channel to `New`:
@@ -52,5 +52,5 @@ If you desire to keep all frames (out0000.jpeg, ...) pass a path to `New`:
 
 
 ```go
-g, err := thumbgen.New("video.mp4", 360, 100, "out.jpg", thumbgen.WithStoreSingleFrames("/tmp"))
+g, err := thumbgen.New("video.mp4", 360, 2, "out.jpg", thumbgen.WithStoreSingleFrames("/tmp"))
 ```

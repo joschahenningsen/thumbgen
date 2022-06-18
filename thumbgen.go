@@ -26,7 +26,7 @@ type Gen struct {
 	frames       []string
 	out          string
 	quality      int
-	thumbNum     int
+	interval     int
 	frameDir     string
 	progressChan *chan int
 }
@@ -59,9 +59,9 @@ func hash(s string) string {
 	return fmt.Sprintf("%x", h.Sum32())
 }
 
-func New(file string, width int, thumbNum int, out string, options ...Option) (*Gen, error) {
-	if thumbNum < 1 {
-		return nil, errors.New("invalid thumbNum, must be >= 1")
+func New(file string, width int, interval int, out string, options ...Option) (*Gen, error) {
+	if interval < 1 {
+		return nil, errors.New("invalid interval, must be >= 1")
 	}
 	// check for required software:
 	_, err := exec.LookPath("ffmpeg")
@@ -69,6 +69,12 @@ func New(file string, width int, thumbNum int, out string, options ...Option) (*
 		return nil, err
 	}
 	_, err = exec.LookPath("ffprobe")
+	if err != nil {
+		return nil, err
+	}
+
+	// check if file exists
+	_, err = os.Stat(file)
 	if err != nil {
 		return nil, err
 	}
@@ -84,7 +90,7 @@ func New(file string, width int, thumbNum int, out string, options ...Option) (*
 	aspect := float64(width) / float64(origW)
 	height := int(float64(origH) * aspect)
 
-	g := &Gen{file: file, fileHash: hash(file + out + fmt.Sprintf("%d", os.Getpid())), duration: totalDuration, width: width, thumbNum: thumbNum, height: height, frames: []string{}, out: out, frameDir: ""}
+	g := &Gen{file: file, fileHash: hash(file + out + fmt.Sprintf("%d", os.Getpid())), duration: totalDuration, width: width, interval: interval, height: height, frames: []string{}, out: out, frameDir: ""}
 	for _, option := range options {
 		option(g)
 	}
@@ -105,7 +111,6 @@ func (g *Gen) Generate() error {
 	if err != nil {
 		return err
 	}
-
 	if g.frameDir == "" {
 		err = g.cleanup()
 		if err != nil {
@@ -116,13 +121,13 @@ func (g *Gen) Generate() error {
 }
 
 func (g *Gen) generateFrames() error {
-	for i := 0; i < g.thumbNum; i++ {
-		err := g.exportFrameAt(int(g.duration/float64(g.thumbNum)) * i)
+	for t := 0; t < int(math.Ceil(g.duration)); t += g.interval {
+		err := g.exportFrameAt(t)
 		if err != nil {
 			return err
 		}
 		if g.progressChan != nil {
-			*g.progressChan <- int((float64(i) / float64(g.thumbNum-1.0)) * 100)
+			*g.progressChan <- int(float64(t) / g.duration * 100)
 		}
 	}
 	return nil
@@ -140,7 +145,9 @@ func (g *Gen) exportFrameAt(time int) error {
 }
 
 func (g Gen) merge() error {
-	d := int(math.Ceil(math.Sqrt(float64(g.thumbNum))))
+	// Number of thumbnails per column.
+	d := int(math.Ceil(math.Sqrt(g.duration / float64(g.interval))))
+
 	dst := image.NewRGBA(image.Rect(0, 0, g.width*d, g.height*d))
 	for i, frame := range g.frames {
 		f, err := os.Open(frame)
