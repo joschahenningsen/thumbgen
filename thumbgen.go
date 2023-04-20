@@ -102,6 +102,15 @@ func (g Gen) GetHeight() int {
 	return g.height
 }
 
+// GenerateOne generates a single thumbnail at the middle of the file.
+func (g *Gen) GenerateOne() (string, error) {
+	err := g.exportFrameAt(int(g.duration / 2))
+	if err != nil {
+		return "", err
+	}
+	return g.frames[len(g.frames)-1], nil
+}
+
 func (g *Gen) Generate() error {
 	err := g.generateFrames()
 	if err != nil {
@@ -135,7 +144,8 @@ func (g *Gen) generateFrames() error {
 
 func (g *Gen) exportFrameAt(time int) error {
 	frame := path.Join(g.frameDir, fmt.Sprintf(g.fileHash+"-out-%d.jpeg", time))
-	cmd := exec.Command("ffmpeg", "-y", "-ss", fmt.Sprintf("%d", time), "-i", g.file, "-vf", fmt.Sprintf("scale=%d:-1", g.width), "-frames:v", "1", "-q:v", "2", frame)
+	cmd := exec.Command("ffmpeg", "-y", "-ss", fmt.Sprintf("%d", time), "-i", g.file, "-vf", fmt.Sprintf("scale=%d:-1", g.width), "-frames:v", "1", frame)
+	fmt.Println(cmd.String())
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("ffmpeg: %s :%v", string(out), err)
