@@ -11,6 +11,7 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"strings"
 
 	"hash/fnv"
 
@@ -74,9 +75,11 @@ func New(file string, width int, interval int, out string, options ...Option) (*
 	}
 
 	// check if file exists
-	_, err = os.Stat(file)
-	if err != nil {
-		return nil, err
+	if !strings.HasPrefix(file, "http") {
+		_, err = os.Stat(file)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	// probe video duration and resolution:
