@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"image"
-	"image/draw"
 	"image/jpeg"
 	"math"
 	"os"
@@ -16,6 +15,7 @@ import (
 	"hash/fnv"
 
 	"github.com/tidwall/gjson"
+	"golang.org/x/image/draw"
 )
 
 type Gen struct {
@@ -214,4 +214,43 @@ func probe(file string) (string, error) {
 		return "", err
 	}
 	return string(buf.Bytes()), nil
+}
+
+func CombineThumbs(primary, secondary, dest string) error {
+	primaryF, err := os.Open(primary)
+	if err != nil {
+		return err
+	}
+	defer primaryF.Close()
+	secondaryF, err := os.Open(secondary)
+	if err != nil {
+		return err
+	}
+	defer secondaryF.Close()
+
+	primaryImg, _, err := image.Decode(primaryF)
+	if err != nil {
+		return err
+	}
+	secondaryImg, _, err := image.Decode(secondaryF)
+	if err != nil {
+		return err
+	}
+	secondaryImgS := image.NewRGBA(image.Rect(0, 0, primaryImg.Bounds().Max.X/3, primaryImg.Bounds().Max.Y/3))
+
+	draw.CatmullRom.Scale(secondaryImgS, secondaryImgS.Rect, secondaryImg, secondaryImg.Bounds(), draw.Over, nil)
+
+	// Create a new RGBA image with the same size as the primary image.
+	combined := image.NewRGBA(primaryImg.Bounds())
+	// Draw the primary image onto the combined image.
+	draw.Draw(combined, primaryImg.Bounds(), primaryImg, image.Point{X: 0, Y: 0}, draw.Src)
+	// Draw the secondary image onto the combined image at 1/4 the size.
+	bounds := image.Rectangle{
+		Min: image.Point{X: combined.Bounds().Max.X - combined.Bounds().Max.X/3 - 5, Y: 5},
+		Max: image.Point{X: combined.Bounds().Max.X, Y: combined.Bounds().Max.Y},
+	}
+	draw.Draw(combined, bounds, secondaryImgS, image.Point{X: 0, Y: 0}, draw.Over)
+	o, _ := os.Create(dest)
+	defer o.Close()
+	return jpeg.Encode(o, combined, &jpeg.Options{Quality: 90})
 }
